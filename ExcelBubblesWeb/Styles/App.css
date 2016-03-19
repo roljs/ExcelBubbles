@@ -1,0 +1,55 @@
+﻿body
+{
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    font-size: 62.5%;
+    line-height: 1.4em;
+}
+
+#backImageButton
+{
+    cursor: pointer;
+    position: absolute;
+    left: 20px;
+    top: 13px;
+    z-index: 5;
+    opacity: 0;
+}
+
+
+
+
+.bindingDetailData {
+    display:none;
+}
+
+#detailsHeading {
+    padding: 5px 0px 0px 5px;
+    margin: 10px 0px 10px 0px;
+    font-weight: normal;
+    font-family: "Segoe UI Light";
+    text-align:center;
+}
+
+#detailsBox {
+    min-width: 200px;
+    min-height: 200px;
+    position: absolute;
+    right: 10px;
+    background-color: #FDFDFD;
+    color: #0060A6;
+    opacity: 1;
+    padding: 0px 0px 20px 0px;
+    border: 2px solid #A1A1A1;
+    overflow: hidden;
+    z-index: 1001;
+}
+
+#detailsCloseIcon {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    padding: 3px;
+}

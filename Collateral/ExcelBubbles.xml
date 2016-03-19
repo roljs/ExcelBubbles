@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp xmlns="http://schemas.microsoft.com/office/appforoffice/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="ContentApp">
+  <Id>DFD1A9B2-D18A-4F4D-94F1-D52A4208C55E</Id>
+  <Version>1.1</Version>
+  <ProviderName>Rolando Jimenez</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Excel Bubbles" />
+  <Description DefaultValue="Visualize your data in a fun and interactive way using bubbles to quickly identify patterns."/>
+    <IconUrl DefaultValue="http://bubbles.azurewebsites.net/bubbles.png" />
+  <Capabilities>
+    <Capability Name="Workbook" />
+  </Capabilities>
+  <DefaultSettings>
+    <SourceLocation DefaultValue="https://bubbles.azurewebsites.net/" />
+    <RequestedWidth>500</RequestedWidth>
+    <RequestedHeight>500</RequestedHeight>
+  </DefaultSettings>
+  <Permissions>ReadWriteDocument</Permissions>
+</OfficeApp>

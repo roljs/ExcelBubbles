@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ProjectItem Type="Microsoft.VisualStudio.SharePoint.OfficeApp" DefaultFile="ExcelBubbles.xml" SupportedTrustLevels="All" SupportedDeploymentScopes="AppPackage" xmlns="http://schemas.microsoft.com/VisualStudio/2010/SharePointTools/SharePointProjectItemModel">
+  <Files>
+    <ProjectItemFile Source="ExcelBubbles.xml" Target="ExcelBubbles.xml\" Type="AppPackage" />
+  </Files>
+  <ExtensionData>
+    <ExtensionDataItem Key="OfficeAppManifestRelativePath" Value="ExcelBubbles.xml\ExcelBubbles.xml" />
+    <ExtensionDataItem Key="OfficeAppStartPageRelativePath" Value="ExcelBubbles.html" />
+  </ExtensionData>
+</ProjectItem>

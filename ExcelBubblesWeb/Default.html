@@ -1,0 +1,155 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" manifest="bubbles.appcache">
+<head>
+    <title></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <link rel="stylesheet" type="text/css" href="Styles/Base/Office.css" />
+    <link rel="stylesheet" type="text/css" href="Styles/App.css" />
+    <link rel="stylesheet" type="text/css" href="Styles/MessagePanel.css" />
+    <script>
+    (function (i, s, o, g, r, a, m) {
+        i['GoogleAnalyticsObject'] = r; i[r] = i[r] || function () {
+            (i[r].q = i[r].q || []).push(arguments)
+        }, i[r].l = 1 * new Date(); a = s.createElement(o),
+        m = s.getElementsByTagName(o)[0]; a.async = 1; a.src = g; m.parentNode.insertBefore(a, m)
+    })(window, document, 'script', '//www.google-analytics.com/analytics.js', 'ga');
+
+    ga('create', 'UA-54887939-1', 'auto');
+    ga('send', 'pageview');
+
+    </script>
+
+    <script type="text/javascript" src="Scripts/jquery-2.1.0.min.js"></script>
+    <script type="text/javascript" src="Scripts/MessagePanel.js"></script>
+    <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1.1/hosted/office.js"></script>
+    <script type="text/javascript" src="Scripts/ExcelBubbles.js"></script>
+    <script type="text/javascript" src="Scripts/processing-1.0.0.min.js"></script>
+    
+</head>
+
+
+<body onmouseover="bodyOnMouseOver()" onmouseout="bodyOnMouseOut()">
+    <div id="overlay" style="position: fixed; height: 70%; width: 42%; visibility: hidden; background: #000; opacity: 0.5; z-index: 10; bottom: 0; right: 0; color: white">
+        Debug
+    </div>
+
+    <div id="startPage" class="container" style="visibility: visible; position: absolute; left: 0px; right: 0px; bottom: 0px; top: 0px;">
+        <div class="content">
+            <canvas id="canvasMenu" datasrc="bubblesMenu.txt"></canvas>
+        </div>
+    </div>
+
+    <div id="myCanvas" class="container" style="visibility: hidden; position: absolute; left: 0px; right: 0px; bottom: 0px; top: 0px;">
+        <div class="content">
+            <canvas id="canvasMain" datasrc="bubbles.txt"></canvas>
+        </div>
+    </div>
+
+    <img id="backImageButton" src='img/backbutton.png' width="24" height="24" onclick="switchVisiblePane();" />
+    <div id="detailsBox" style="display: none;" onselectstart='return false;'>
+        <h2 id="detailsHeading"></h2>
+        <img id="detailsCloseIcon" onclick="hideDetails()" src="img/MetroClose.png" href="#"
+            alt='Close' />
+        <table id="detailsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Value</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <div id="mySettings" style="display: none">
+        <table id="settingsTable">
+            <tr>
+                <td>
+                    <label>Mode</label>
+                </td>
+                <td>
+                    <select id="bubblesMode" onchange="changeMode();">
+                        <option value="DIRECT">Basic</option>
+                        <option value="DETAIL">Master-Detail</option>
+                    </select>
+                    <button class="bindingDetailData" id="bindData" onclick="setBindingDetailData();">
+                        Select
+                        Data</button>
+                    <button class="bindingDetailData" id="insertSourceData" onclick="insertSampleDetailData();">
+                        Insert Sample Data</button>
+                </td>
+            </tr>
+            <tr class="bindingDetailData">
+                <td>
+                    <label>Lookup Column</label>
+                </td>
+                <td>
+                    <select id="primaryKey">
+                    </select>
+                </td>
+            </tr>
+            <tr class="bindingDetailData">
+                <td>
+                    <label>Group By Column</label>
+                </td>
+                <td>
+                    <select id="groupBy">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Min Color</label>
+                </td>
+                <td>
+                    <input id="minColor" type="text" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Max Color</label>
+                </td>
+                <td>
+                    <input id="maxColor" type="text" />
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Title Column</label>
+                </td>
+                <td>
+                    <select id="titleCol">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Size Column</label>
+                </td>
+                <td>
+                    <select id="sizeCol">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label>Color Column</label>
+                </td>
+                <td>
+                    <select id="colorCol">
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td></td>
+                <td>
+                    <button id="saveSettingsButton" onclick="saveSettings();">Save</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+
+</body>
+</html>

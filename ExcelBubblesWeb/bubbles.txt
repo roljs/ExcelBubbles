@@ -1,0 +1,1099 @@
+﻿// ---------------------------------------------------------------- //
+//  Kerning Pairs Visualizator
+//  2005 Martin Bereciartua - email (at) m-i-b.com.ar
+//  http://www.m-i-b.com.ar/
+// ---------------------------------------------------------------- //
+//
+//  This source is released under the creative commons license 
+//  http://creativecommons.org/licenses/by-nc-sa/1.0/
+//
+//  Thanks to:
+//  Ben Fry and Karsten Schmidt for inspiration
+//
+// ---------------------------------------------------------------- //
+//  Made with Processing (Beta) v091
+// ---------------------------------------------------------------- //
+
+//Min and Max colors
+int _rMin = 155; int _gMin = 187; int _bMin = 59;
+int _rMax = 192; int _gMax = 80; int _bMax = 77;
+
+PFont font, font1, font2, font3, font4;
+String par_actual = "";               // valor actual del escaneo del texto
+String[] lines;                       // lineas del texto escaneado
+int arrastrando = -1;
+
+int pares_totales = 0;
+float k_total;
+
+int espacio_abajo;
+int espacio_arriba;
+int espacio_derecha;
+int espacio_izquierda;
+String layout_actual = "reducido";
+String visual_mode = "lineal";
+int burbujas_maximas = 99;
+int burbujas_graficadas = 0;
+float minSize = 10;
+int animationRate = 30;
+int maxCycles = animationRate * 4; //Number of seconds to animate based on frameRate
+int currentCycle = 0;
+int titleId = -1;
+int clickedX = 0;
+int clickedY = 0;
+
+Ball[] balls = new Ball[0];
+float grav = 4.0;                    // Gravedad
+float b = 0.85;                       // Rebote
+float f = 0.90;                       // Friccion
+
+color ColorLineasGrales = color(200);
+color ColorAcento = color(255, 102, 0);
+color ColorAcentoCompanion = color(255, 180, 0);
+
+int lapso_refresh = 1;               // cada cuantos frames se renueva la info del listado
+int timer_interno = 0;
+
+boolean resorte_activado = false;
+boolean show_info = false;
+boolean llenar_burbujas = true;
+boolean hay_gravedad = true;
+boolean renderCompleted = false;
+boolean debugMode = false;
+booloean autoFreeze = true;
+boolean effects = true; 
+boolean useShape = false;
+boolean clicked = false; 
+
+PShape bubbleShape = null;
+
+void initializeRGB() {
+	_rMin = parseInt(_minValue.substring(0,2),16);
+	_gMin = parseInt(_minValue.substring(2,4),16);
+	_bMin = parseInt(_minValue.substring(4,6),16);
+	
+	_rMax = parseInt(_maxValue.substring(0,2),16);
+	_gMax = parseInt(_maxValue.substring(2,4),16);
+	_bMax = parseInt(_maxValue.substring(4,6),16);
+}
+
+void setup() {
+
+  initializeRGB()
+  balls = new Ball[0];
+  currentBall = 0;
+  renderCompleted = false;
+
+  size($.getDocWidth(), $.getDocHeight());
+  background(255);
+  smooth();
+  frameRate(animationRate);
+
+  font = loadFont("calibri");
+  font1 = loadFont("CalibriL");
+  font2 = loadFont("Swiss721BT-BoldCondensed-18.vlw");
+  font3 = loadFont("Swiss721BT-BoldCondensed-14.vlw");
+  font4 = loadFont("Swiss721BT-RomanCondensed-18.vlw");
+  
+  //calcularKtotal();
+  
+  layout( font1, font2, font3 );
+  
+	try{ 
+	 bubbleShape = loadShape("shape.svg");
+	 }catch (e) {}
+
+  setupBubbles();
+
+  unFreeze();
+}
+
+void draw() {
+  
+	if(autoFreeze) {
+		if(currentCycle >= maxCycles) {
+			noLoop();
+		}
+	}
+
+
+	cursor(ARROW);
+	  
+    background(255);
+   
+    titleId = -1; 
+
+    //Render bubbles at their current position
+	currentCycle++;
+	for ( int i=burbujas_maximas; i>=0; i-- ) {
+		if ( i < balls.length ) {
+			if ( hay_gravedad ) balls[i].fall();
+			if ( resorte_activado ) balls[i].spring();
+			balls[i].bounce();
+			balls[i].collide();
+			balls[i].move();
+			balls[i].encima();      
+			balls[i].display();
+		}
+	}
+	
+	if (_bubblesMode == 'DETAIL')
+	  {
+		textFont(font1, height/13);
+		textAlign(CENTER);
+		fill(88,89,91);
+		text(_selectedPrimaryKey, width/2, 32);
+	  }
+
+    layout( font1, font2, font3 );
+	  
+	if(debugMode) {
+		displayDebugInfo();
+
+   }
+}
+
+void displayDebugInfo() {
+	textFont(font, 12);
+	textAlign(LEFT);
+	fill(120);
+
+	boolean shapeLoaded = false;
+	if(bubbleShape != null)
+		shapeLoaded = true;
+
+	text("C: " + currentCycle +" F: " + frameCount + " Auto Freeze: " + autoFreeze + " Shape: " + shapeLoaded, espacio_izquierda,height - 30);
+}
+
+void setupBubbles () {
+//Create bubbles array from input data
+	if(!renderCompleted && _values.length > 0) {
+		
+		for (int i=0; i<_values.length; i++) {
+			float sizeVal = 0;
+			floar colorVal = 0;
+
+			if(!isNaN(parseFloat(_values[i][1]))) 
+				sizeVal = parseFloat(_values[i][1]);
+			if(!isNaN(parseFloat(_values[i][2]))) 
+				colorVal = parseFloat(_values[i][2]);
+
+			if (_values[i][0] != "") //Do not render empty bubbles
+				addBall(i,_values[i][0], sizeVal, colorVal);
+		}
+
+		pares_totales = 0;
+		burbujas_graficadas = 0;
+		for ( int i=burbujas_maximas; i>=0; i-- ) {
+		  if ( i < balls.length ) {
+			pares_totales += balls[i].sizeValue;
+			burbujas_graficadas++;
+		  }
+		}
+
+		//Calculate bubble sizes
+		calcularKtotal();
+		for ( int i=0; i<balls.length; i++ ) {
+		  float kprima = ( k_total * balls[i].sizeValue ) / pares_totales;
+		  balls[i].ka = kprima;
+		  balls[i].r = sqrt( ( ( kprima ) / PI ) );
+		  if(balls[i].r < minSize) balls[i].r = minSize; //Don't allow bubbles to be too small
+		}
+
+		//Order bubbles array    
+		  timer_interno++;
+		  if ( timer_interno == lapso_refresh ) {
+			timer_interno = 0;
+			ordenarArrays();
+		  }
+
+
+
+ 		renderCompleted = true;
+	}
+
+}
+
+void graficando() { // funcion para graficar los top 20
+
+  float tamanio = 45;
+  int altura = 140;
+  int alpha_value = 255;
+  
+  for (int i=0; i < 20 && i < balls.length ; i++) {
+  
+    textFont(font, tamanio);
+    textAlign(CENTER);
+    fill(0, 102, 153, alpha_value); 
+    text(balls[i].nombre, width - 50, altura);
+    
+    tamanio = tamanio * 0.94;
+    altura += tamanio-5;
+    alpha_value -= 10;
+  
+  }
+  
+}
+
+void layout( PFont font1, PFont font2, PFont font3 ) {
+
+  if ( layout_actual == "standard" ) {
+  
+    espacio_abajo = 60;
+    espacio_arriba = 40;
+    espacio_derecha = 100;
+    espacio_izquierda = 15;
+
+    rectMode(CORNERS);
+    noStroke();
+    fill(255);
+    rect(width-espacio_derecha+5, 0, width, height);
+  
+    textFont(font, 48);
+    textAlign(CENTER);
+    fill(ColorAcento); 
+    text(par_actual, width - 50, 75); 
+    
+    textFont(font3, 14);
+    textAlign(CENTER);
+    fill(180);
+  
+    graficando();   
+  
+  } else if ( layout_actual == "reducido" ) {
+  
+    //espacio_abajo = 60;
+    //espacio_arriba = 20;
+    //espacio_derecha = 20;
+    //espacio_izquierda = 20;
+
+    espacio_abajo = 40;
+    espacio_arriba = 40;
+    espacio_derecha = 10;
+    espacio_izquierda = 10;
+    
+  }
+  
+	// Number of bubbles
+	textFont(font1, 12);
+	textAlign(LEFT);
+	fill(120);
+	//text(str(burbujas_graficadas)+" / "+str(balls.length), espacio_izquierda, height-10);
+  
+	//Help text 
+	textFont(font, 12);
+	textAlign(CENTER);
+	fill(120);
+	text("Keyboard controls: arrow keys=gravity, i=info, m=more, l=less, e=effects, r=redraw", width / 2, height-10);
+
+}
+
+
+void sumarKP( String newKP ) {
+  int kp_encontrado = 0;
+  // buscar kp a sumar en array existente
+  for (int i=0; i < balls.length; i++) { 
+    if ( balls[i].nombre == newKP ) { // si encuentro el kp le sumo una ocurrencia
+      kp_encontrado = 1;
+      balls[i].sizeValue++;
+    } 
+    if ( kp_encontrado == 1 ) break;
+  } 
+  
+  // si no lo encuentro lo creo
+  if ( kp_encontrado == 0 ) nuevoKP( newKP );
+
+}
+
+void nuevoKP( String newx ) {  
+  
+  calcularKtotal();
+  float ka;
+  if ( balls.length > 0 ) ka = k_total / balls.length;
+  else ka = k_total;
+  Ball[] tempBall = new Ball( newx, ka, newx, 1 );
+  balls[balls.length] = tempBall;
+
+}
+
+void addBall( int id, String name, float size, float color) {  
+  
+  calcularKtotal();
+  float ka;
+  if ( balls.length > 0 ) ka = k_total / balls.length;
+  else ka = k_total;
+  Ball[] tempBall = new Ball( id, ka, name, size, color, -1, -1, -1, -1);
+  balls[balls.length] = tempBall;
+
+}
+
+void ordenarArrays() {
+  
+  Ball[] temp_sizeValue = new Ball[balls.length];
+  temp_sizeValue = balls;
+  
+  Ball temp;
+  int i, j;
+      for (i = temp_sizeValue.length-1; i >= 0; i--)
+         for (j = 0; j < i; j++)
+            if (temp_sizeValue[j].sizeValue < temp_sizeValue[j + 1].sizeValue) {
+               temp = temp_sizeValue[j];
+               temp_sizeValue[j] = temp_sizeValue[j + 1];
+               temp_sizeValue[j + 1] = temp;
+            }
+
+  balls = temp_sizeValue;
+  
+}
+
+void calcularKtotal () {
+
+  // encontrar un valor de k (superficie a ocupar) que concuerde con
+  // la cantidad de burbujas a dibujar (evitar que se superpongan)
+  
+  float alto = height-espacio_arriba-espacio_abajo;
+  float ancho = width-espacio_izquierda-espacio_derecha;
+  
+  if ( burbujas_graficadas <= 1 ) {
+    if ( alto < ancho ) k_total = PI*pow(alto/2,2)*0.8;
+    else k_total = PI*pow(ancho/2,2)*0.8;
+  }
+  else if ( burbujas_graficadas > 1 && burbujas_graficadas <= 6 ) k_total = ancho * alto * 0.65;
+  else if ( burbujas_graficadas > 6 && burbujas_graficadas <= 20 ) k_total = ancho * alto * 0.75;
+  else if ( burbujas_graficadas > 20 && burbujas_graficadas <= 50 ) k_total = ancho * alto * 0.80;
+  else if ( burbujas_graficadas > 50 && burbujas_graficadas <= 200 ) k_total = ancho * alto * 0.86;
+  else if ( burbujas_graficadas > 200 ) k_total = ancho * alto * 0.92;
+
+}
+
+
+void keyPressed() {
+
+
+	 unFreeze();
+
+    if(keyCode<256) keyboard.press(keyCode);
+
+    if (key == 'm' || key == 'M') { // viendo mas burbujas
+      if ( burbujas_maximas == 0 ) burbujas_maximas = 4;
+      else if ( burbujas_maximas == 4 ) burbujas_maximas = 19;
+      else if ( burbujas_maximas == 19 ) burbujas_maximas = 49;
+      else if ( burbujas_maximas == 49 ) burbujas_maximas = 99;
+    }
+    if (key == 'l' || key == 'L') { // viendo menos burbujas
+      if ( burbujas_maximas == 99 ) burbujas_maximas = 49;
+      else if ( burbujas_maximas == 49 ) burbujas_maximas = 19;
+      else if ( burbujas_maximas == 19 ) burbujas_maximas = 4;
+    }
+    if (key == 'a' || key == 'A') { // activando resortes
+      if ( resorte_activado == true ) resorte_activado = false;
+      else if ( resorte_activado == false ) resorte_activado = true;
+    }
+    if (key == 'e' || key == 'E') { // activate visual effects
+      if ( effects == true ) effects = false;
+      else if ( effects == false ) effects = true;
+    }
+    if (key == 'h' || key == 'H') { // Use shape
+      useShape = !useShape;
+    }
+
+    if (key == 'i' || key == 'I') { // mostrar info en burbujas
+      if ( show_info == true ) show_info = false;
+      else if ( show_info == false ) show_info = true;
+    }
+    if (key == 't' || key == 'T') { // mostrar burbujas opacas
+      if ( llenar_burbujas == true ) llenar_burbujas = false;
+      else if ( llenar_burbujas == false ) llenar_burbujas = true;
+    }
+    if (key == 'd' || key == 'D') { // Show debug info
+      if ( debugMode == true ) debugMode = false;
+      else if ( debugMode == false ) debugMode = true;
+    }
+    if (key == 'z' || key == 'Z') { // Automatically freeze after maxCycles
+      if ( autoFreeze == true ) {
+		autoFreeze = false;
+		}
+      else if ( autoFreeze == false ) {
+		autoFreeze = true;
+		}
+    }
+
+    if ( keyboard.pressed(UP) || keyboard.pressed(DOWN) || keyboard.pressed(LEFT) || keyboard.pressed(RIGHT) ) { // aplicar gravedad
+      hay_gravedad = true;
+    } else hay_gravedad = false;
+
+    if (key == 's' || key == 'S') { // shaking
+      for ( int i=0; i<balls.length; i++ ) {
+        balls[i].x += random(-10,10);
+        balls[i].y += random(-10,10);
+      }
+    }
+    if (key == 'r' || key == 'R') { // redistribuyendo
+      for ( int i=0; i<balls.length; i++ ) {
+        balls[i].x = random(balls[i].r+espacio_izquierda, width-espacio_derecha-balls[i].r);
+        balls[i].y = random(balls[i].r+espacio_arriba, height-espacio_abajo-balls[i].r);
+      }
+    }
+  
+}
+
+void keyReleased() { 
+  
+  if(keyCode<256) keyboard.release(keyCode);
+  
+}
+
+void mouseReleased() { 
+  
+  arrastrando = -1;
+  
+}
+
+void mouseMoved() { 
+  
+ unFreeze();
+  
+}
+
+void unFreeze () {
+  if(currentCycle >= maxCycles) currentCycle = 0;
+  loop();
+}
+
+void mouseClicked() {
+	if (mouseButton == RIGHT)
+	{
+		clicked = true;
+		clickedX = mouseX;
+		clickedY = mouseY;
+	}
+}
+
+class Ball {
+
+  float r;
+  float m;
+  
+  float x;
+  float y;
+  
+  float vx;
+  float vy;
+  
+  int id;
+  float ka;
+  
+  String nombre;
+  float sizeValue;
+  float colorValue;
+  
+  // Spring
+  float mass;                                       // Masa
+  float kspring;                                    // Constante de resorte
+  float damp;                                       // Damping 
+  float rest_posx = ( ( width-espacio_derecha ) / 2 ) + espacio_izquierda / 2;
+  float rest_posy = ( ( height-espacio_abajo ) / 2 ) + espacio_derecha / 2;
+  float accel = 0;                                  // Aceleracion 
+  float force = 0;                                  // Fuerza
+  
+  boolean mouse_over;
+  
+  Ball( int ID, float KA, String NOMBRE, float SV, float CV, int X, int Y, VX, VY) {
+  
+    ka = KA;
+    r = sqrt( ka / PI );
+    m = r;
+
+	if(X>=0) x=X; else x = random(r+espacio_izquierda,width-espacio_derecha-r);
+	if(Y>=0) y=Y; else y = random(r+espacio_arriba,height-espacio_abajo-r);
+	if(VX>=0) vx=VX; else vx = random(-3,3);
+	if(VY>=0) vy=VY; else vy = random(-3,3);
+
+    id = ID;
+    nombre = NOMBRE;
+    sizeValue = SV;
+	colorValue= CV;
+    mouse_over = false;
+    
+    mass = sqrt( ( ( (PI*pow((height-espacio_abajo-espacio_arriba)/2,2)*0.8) / 2000 ) / PI ) );
+    damp = 0.85;
+    kspring = 0.01;
+  }
+  
+  void fall() {
+  
+    if ( keyboard.pressed(UP) ) vy -= grav;
+    if ( keyboard.pressed(DOWN) ) vy += grav;
+    if ( keyboard.pressed(LEFT) ) vx -= grav;
+    if ( keyboard.pressed(RIGHT) ) vx += grav;
+  }
+  
+  void spring() {
+  
+    rest_posx = ( ( width-espacio_derecha ) / 2 ) + espacio_izquierda / 2;
+    rest_posy = ( ( height-espacio_abajo ) / 2 ) + espacio_derecha / 2; 
+
+    if ( balls.length > 0 && ( balls[0].sizeValue - balls[burbujas_graficadas-1].sizeValue ) > 0 ) {
+      float A = balls[0].sizeValue;                        // maximo original
+      float C = sizeValue;                                 // valor original
+      float B = balls[burbujas_graficadas-1].sizeValue;    // minimo original
+      float D = 5;                                           // nuevo maximo
+      float E;                                               // nuevo minimo
+      if ( burbujas_graficadas > 20 ) E = 2;
+      else E = 0;
+      kspring = -1 * ( ( ( A - C ) / ( A - B ) ) * ( D - E ) - D );
+    }
+    if ( burbujas_graficadas == 1 ) kspring = 4;
+    
+    //mass = r;
+    
+    force = -kspring * (y - rest_posy);    // f=-ky 
+    accel = force / mass;                  // Asignar aceleracion
+    vy = damp * (vy + accel);              // Definir velocidad 
+    //y += vy;
+
+    force = -kspring * (x - rest_posx);    // f=-ky 
+    accel = force / mass;                  // Asignar aceleracion
+    vx = damp * (vx + accel);              // Definir velocidad 
+    //x += vx;
+  }
+  
+  void bounce() {
+  
+    if ( y + vy + r > height-espacio_abajo ) {
+    
+      y = height-espacio_abajo - r;
+      vx *= f;
+      vy *= -b;
+    }
+    if ( y + vy - r < espacio_arriba ) {
+    
+      y = r+espacio_arriba;
+      vx *= f;
+      vy *= -b;
+    }
+    if ( x + vx + r > width-espacio_derecha ) {
+    
+      x = width-espacio_derecha - r;
+      vx *= -b;
+      vy *= f;
+    }
+    if ( x + vx - r < espacio_izquierda ) {
+    
+      x = r+espacio_izquierda;
+      vx *= -b;
+      vy *= f;
+    }
+  }
+  
+  void collide() {
+  
+    for ( int i=burbujas_maximas; i>=0; i-- ) {
+    
+      if ( i < balls.length ) {
+      
+        float X = balls[i].x;
+        float Y = balls[i].y;
+        float R = balls[i].r;
+        float M = balls[i].m;
+      
+        float deltax = X-x;
+        float deltay = Y-y;
+        float d = sqrt(pow(deltax,2)+pow(deltay,2));
+      
+        if ( d < r + R && d > 0 ) {
+        
+          float dD = r + R - d;
+          float theta = atan2(deltay,deltax);
+        
+          vx += -dD*cos(theta)*M/(m+M);
+          vy += -dD*sin(theta)*M/(m+M);
+        
+          vx *= b;
+          vy *= b;
+        
+        }
+      }
+    }
+  }
+  
+  void move() {
+  
+    if ( mouse_over && mousePressed && ( arrastrando == -1 || arrastrando == id ) ) {
+      x = mouseX;
+      y = mouseY;
+      vx = 0;
+      vy = 0;
+      arrastrando = id;
+	  currentCycle = 0;
+    } else {
+      x += vx;
+      y += vy;
+    }
+    
+    
+  }
+
+  	void clickAction() {
+
+		if ( mouseClicked && dist(x, y, clickedX, clickedY) < r ) {
+			showDetails(id);
+			clicked = false;
+		}
+	}
+  
+  void encima() {
+  
+    if ( dist(x, y, mouseX, mouseY) < r ) {
+	 mouse_over = true;
+	  
+	 }
+
+    else {
+		 mouse_over = false;
+		 }
+  
+  }
+
+  String[] generateLabelArray(String source) {
+	String[] words = source.split(" ");
+	String[] label;
+
+	if(words.length < 2) {
+		label = new String[1];
+		label[0] = words[0];
+	}
+	else {
+		label = new String[2];
+		label[0] = words[0];
+		label[1] = words[1];
+		if(words.length > 2)
+			label[1] += "...";
+	}
+
+/*
+	String label = words[0];
+
+	if(words[0].length < 15 && words.length > 1)
+		label += "\n" + words[1];
+	if(words.length > 2)
+		label += "...";
+*/
+	return label;
+  }
+  
+  float[] getMinMaxColorValue() {
+	float maxValue = 0;
+	float minValue = 0;
+	float[] minMax = new float[2];
+
+	if(balls.length > 0 ) minValue = balls[0].colorValue;
+
+	for(int i=0; i<balls.length; i++) {
+		if(balls[i].colorValue > maxValue)
+			maxValue = balls[i].colorValue;
+		if(balls[i].colorValue < minValue)
+			minValue = balls[i].colorValue;
+	}
+	minMax[0] = minValue;
+	minMax[1] = maxValue;
+	
+	return minMax;
+  }
+
+  void drawBubble(int rVal, int gVal, int bVal) {
+
+	if(useShape && bubbleShape != null) {
+		shapeMode(CENTER);
+		bubbleShape.disableStyle();
+		//shape(bubbleShape, x, y, r*1.75, r*2);
+		shape(bubbleShape, x, y, r*2, r*2);
+		if(effects) {
+		  fill(rVal,gVal,bVal,150);
+		  //Render the smaller shape:
+		  //noStroke();
+		  //shape(bubbleShape, x-(r-r/2), y+(r-r/2.2), r*1.8/3.5, r*2/3.5);
+
+
+		}
+		noFill();
+		ellipse(x,y,2*r,2*r); 	
+	}
+	else {
+
+  	  ellipse(x,y,2*r-r/10,2*r-r/10); 
+	  
+	  //Display bubble highlight
+	  if(effects) {
+		  fill(255,255,255,30);
+		  noStroke();
+		  ellipse(x+(r-r/2),y-(r-r/2),r/4,r/4); 
+
+		  fill(0,0,0,15);
+		  ellipse(x-(r-r/1.7),y+(r-r/1.7),r/1.25,r/1.25);
+		}
+	}
+
+  }
+
+  void display() {
+  
+    float A = balls[0].sizeValue;                        // maximo original
+    float B = balls[burbujas_graficadas-1].sizeValue;    // minimo original
+    float C = sizeValue;                                 // valor original
+    float D;                                               // nuevo maximo
+    float E;                                               // nuevo minimo
+
+    float[] minMaxColorValue = getMinMaxColorValue();
+	float F = minMaxColorValue[1];                        // maximo original
+    float G = minMaxColorValue[0];					    // minimo original
+    float H = colorValue;                                 // valor original
+
+	String[] labelArray;
+	String label;
+
+    //nuevo_valor = -1 * ( ( ( A - C ) / ( A - B ) ) * ( D - E ) - D );
+  
+    if ( visual_mode == "lineal" ) {
+
+      if ( llenar_burbujas ) fill(255,255,255);
+      else noFill();
+      
+
+	  //Calcular los componentes del color de la burbuja
+	  int rVal = 0;
+	  int gVal = 0;
+	  int bVal = 0; 
+
+	  if (F<=G) {
+			rVal = _rMin; gVal = _gMin; bVal = _bMin;	
+		}
+	  else {
+			rVal = (H - G) * (_rMax - _rMin) / (F-G) + _rMin;
+			gVal = (H - G) * (_gMax - _gMin) / (F-G) + _gMin;
+			bVal = (H - G) * (_bMax - _bMin) / (F-G) + _bMin;
+		}
+
+	boolean tooDark=false;
+
+	if(rVal <40 && gVal <40 && bVal <40) {
+		rVal = 40;
+		gVal = 40;
+		bVal = 40;
+		tooDark = true;
+	}
+
+
+
+
+	  if ( mouse_over) {		
+		textFont(font, height/40);
+		textAlign(CENTER);
+		fill(120);
+
+		
+		if((titleId == -1 || titleId == id) && _bubblesMode != 'DETAIL') {
+			text(nombre + " |  size: " + sizeValue.toFixed(2) + " color: " + colorValue.toFixed(2), width/2, 25);
+			titleId = id;
+		}
+
+		
+		
+		  if ( llenar_burbujas )
+			fill(rVal,gVal,bVal,200);
+		  else
+			fill(rVal,gVal,bVal,150);
+		
+		strokeWeight(r/15);
+
+		if (_bubblesMode == 'DETAIL')
+		{
+		  if(clicked)
+			clickAction();
+			cursor(HAND);
+		}
+
+	   }
+	   else {
+
+		  if ( llenar_burbujas && !tooDark)
+			fill(rVal,gVal,bVal);
+		  else
+			fill(rVal,gVal,bVal,150);
+
+
+		   strokeWeight(r/20);
+	   	  
+
+	   }
+
+  
+      float lc = -1 * ( ( ( A - C ) / ( A - B ) ) * ( 60 - 200 ) - 60 );
+	  if(lc < 150) lc = 150;
+      float lcalpha = -1 * ( ( ( A - C ) / ( A - B ) ) * ( 255 - 90 ) - 255 );
+      if ( A == B ) lcalpha = 255;
+      color local = color( lc );
+      stroke( rVal-50,gVal-50,bVal-50 );      
+
+      drawBubble(rVal,gVal,bVal);
+
+ 
+	labelArray = generateLabelArray(nombre);
+
+	//Identify longest element
+	int longestIndex = 0;
+    for(int i=0; i<labelArray.length; i++){
+			if(labelArray[i].length() > labelArray[longestIndex].length())
+				longestIndex = i;
+		}
+
+      if(labelArray[longestIndex].length <= 5)
+		float tamanio = ((r*2)/labelArray[longestIndex].length/1.25);
+	else
+		float tamanio = ((r*2)/labelArray[longestIndex].length)*1.65;
+
+      textFont(font, tamanio);
+      textAlign(CENTER);
+      fill(255, 255, 255, 255);
+            
+      if(labelArray.length > 1) {
+			 text(labelArray[0], x, y-tamanio/8);
+			 text(labelArray[1], x, y+tamanio/1.5);
+		 }
+		 else
+		 {
+			text(labelArray[0], x, y+tamanio/3);
+		 }
+    
+
+
+      if ( show_info || mouse_over ) {
+
+
+
+		if (_bubblesMode == 'DIRECT')
+		{
+		    float text_height = r*0.3;
+		    textFont(font, text_height);
+
+			bubble_radius = r*.5;
+			text_height = ((bubble_radius*2)/(str(sizeValue.toFixed(0)).length))*.3;
+			textFont(font, text_height);
+			theta = -90*Math.PI/180;
+			fill(255,255,255, 150);	
+			ellipse(x + (r-bubble_radius/1.25)*cos(theta),y + (r-bubble_radius/1.25)*sin(theta),bubble_radius,bubble_radius); 
+			fill(0, 0, 0, 150);
+			textAlign(CENTER);
+			text(str(sizeValue.toFixed(0)), x + (r-bubble_radius/1.25)*cos(theta), y + (r-bubble_radius/1.25)*sin(theta) + text_height/3);
+
+
+			bubble_radius = r*.5;
+			text_height = ((bubble_radius*2)/(str(sizeValue.toFixed(0)).length))*.3;
+			textFont(font, text_height);
+			theta = 90*Math.PI/180;
+			fill(255,255,255, 150);	
+			ellipse(x + (r-bubble_radius/1.25)*cos(theta),y + (r-bubble_radius/1.25)*sin(theta),bubble_radius,bubble_radius); 
+			fill(0, 0, 0, 150);
+			textAlign(CENTER);
+			text(str(colorValue.toFixed(0)), x + (r-bubble_radius/1.25)*cos(theta), y + (r-bubble_radius/1.25)*sin(theta) + text_height/3);
+
+
+
+		}
+		else
+		{
+			
+
+			String gold_value = _values[id][4][0];
+			String silver_value = _values[id][4][1];
+			String bronze_value = _values[id][4][2];
+
+
+			//Switch places if less than 3 bubbles
+			if (bronze_value == null)
+			{
+				if (silver_value == null)
+				{
+					silver_value = gold_value;
+					gold_value = null;
+				}
+				else if (gold_value != null)
+				{
+					bronze_value = silver_value;
+					silver_value = null;
+				}
+			}
+			else if (silver_value == null)
+			{
+				silver_value = bronze_value;
+				bronze_value = null;
+			}
+			
+
+			noStroke();
+
+			/*
+			float bubble_radius = r*.5;
+			float text_height = ((bubble_radius*2)/(val1.length))*.3;
+			textFont(font, text_height);
+			float theta = 55*Math.PI/180;
+			fill(247,212,11); 
+			ellipse(x + (r-bubble_radius)*cos(theta),y - (r-bubble_radius/1.5)*sin(theta),bubble_radius,bubble_radius); 
+			fill(255, 255, 255, 255);
+			textAlign(CENTER);
+			text(val1, x + (r-bubble_radius)*cos(theta), y - (r-bubble_radius/1.5)*sin(theta) + text_height/3);
+
+			bubble_radius = r*.4;
+			text_height = ((bubble_radius*2)/(val2.length))*.3;
+			textFont(font, text_height);
+			theta = 55*Math.PI/180;
+			fill(205,203,203); 
+			ellipse(x + (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+			fill(255, 255, 255, 255);
+			textAlign(CENTER);
+			text(val2, x + (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+
+			bubble_radius = r*.3;
+			text_height = ((bubble_radius*2)/(val3.length))*.3;
+			textFont(font, text_height);
+			theta = 55*Math.PI/180;
+			fill(212,146,42); 
+			ellipse(x - (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+			fill(255, 255, 255, 255);
+			textAlign(CENTER);
+			text(val3, x - (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+			*/
+
+			if (gold_value != null)
+			{
+				gold_value = gold_value.toString();
+				bubble_radius = r*.4;
+				text_height = ((bubble_radius*2)/(gold_value.length))*.3;
+				textFont(font, text_height);
+				theta = 125*Math.PI/180;
+				fill(247,212,11); 
+				ellipse(x + (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+				fill(255, 255, 255, 255);
+				textAlign(CENTER);
+				text(gold_value, x + (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+			}
+
+			if (silver_value != null)
+			{
+				silver_value = silver_value.toString();
+				bubble_radius = r*.4;
+				text_height = ((bubble_radius*2)/(silver_value.length))*.3;
+				textFont(font, text_height);
+				theta = 90*Math.PI/180;
+				fill(205,203,203); 
+				ellipse(x + (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+				fill(255, 255, 255, 255);
+				textAlign(CENTER);
+				text(silver_value, x + (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+			}
+
+			if (bronze_value != null)
+			{
+				bronze_value = bronze_value.toString();
+				bubble_radius = r*.4;
+				text_height = ((bubble_radius*2)/(bronze_value.length))*.3;
+				textFont(font, text_height);
+				theta = 55*Math.PI/180;
+				fill(212,146,42); 
+				ellipse(x + (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+				fill(255, 255, 255, 255);
+				textAlign(CENTER);
+				text(bronze_value, x + (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+			}
+
+		}
+
+
+		
+      } 
+
+			if (_bubblesMode != 'DIRECT')
+		{
+
+			//Display the size value for the bubble
+			bubble_radius = r*.5;
+			text_height = ((bubble_radius*2)/(str(sizeValue.toFixed(0)).length))*.3;
+			textFont(font, text_height);
+			theta = -90*Math.PI/180;
+			fill(255,255,255, 150); 
+			ellipse(x + (r-bubble_radius)*cos(theta),y + (r-bubble_radius)*sin(theta),bubble_radius,bubble_radius); 
+			fill(0, 0, 0, 150);
+			textAlign(CENTER);
+			text(str(sizeValue.toFixed(0)), x + (r-bubble_radius)*cos(theta), y + (r-bubble_radius)*sin(theta) + text_height/3);
+		}
+
+
+    
+    }
+
+  }
+}
+
+
+
+
+
+//
+// Funcion para dibujar barra de avance
+// 23/07/05 :: P&A
+//
+
+void barraAvance( int x1, int y1, 
+                  int x2, int y2, 
+                  float ValParcial, float ValTotal, 
+                  color ColorLinea, color ColorRelleno ) {
+
+  float AnchoReal = ( ( ( ValParcial * 100 ) / ValTotal ) * ( x2 - x1 )  ) / 100;
+
+  strokeWeight(1);
+  stroke(ColorLinea);
+  noFill();
+  rectMode(CORNERS); 
+  rect(x1, y1, x2, y2);
+  
+  noStroke();
+  fill(ColorRelleno);
+  rect(x1, y1, x1+AnchoReal+1, y2+1);
+
+}
+
+
+
+Keys keyboard = new Keys();
+
+class Keys { 
+
+  boolean[] k; 
+   
+  Keys() { 
+    k=new boolean[255]; 
+    for(int i=0;i<k.length;i++) k[i]=false;  
+  } 
+ 
+  void press(int x) { 
+    k[x]=true; 
+  } 
+ 
+  void release(int x) { 
+    k[x]=false; 
+  } 
+ 
+  boolean pressed(int x) { 
+    return k[x]; 
+  } 
+ 
+  void releaseAll() { 
+    for(int i=0;i<k.length;i++) k[i]=false;  
+  } 
+ 
+  boolean anyPressed() { 
+    for(int i=0;i<k.length;i++) if(k[i]==true) return true; 
+    return false; 
+  } 
+}
+
