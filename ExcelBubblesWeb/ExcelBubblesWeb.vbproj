@@ -25,6 +25,7 @@
     <SccAuxPath>SAK</SccAuxPath>
     <SccProvider>SAK</SccProvider>
     <TargetOfficeVersion>15.0</TargetOfficeVersion>
+    <UseGlobalApplicationHostFile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -98,7 +99,6 @@
     <Content Include="Scripts\processing-1.4.1.js" />
     <Content Include="Scripts\processing-1.4.1.min.js" />
     <Content Include="shape.backup.svg" />
-    <Content Include="ExcelBubbles.html" />
     <Content Include="shape.svg" />
     <Content Include="img\MetroClose.png" />
     <Content Include="img\MetroCog.png" />
