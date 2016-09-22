@@ -646,7 +646,8 @@ var chartIsRendered = false; //at least one chart has been rendered by this Agav
 
 //switches the drawn pane between the chart and the start page
 function switchVisiblePane() {
-    if (document.getElementById("startPage").currentStyle.visibility == "hidden") {
+
+    if (window.getComputedStyle(document.getElementById("startPage")).visibility == "hidden") {
         showStartPage();
         hideCanvas();
     }
@@ -673,7 +674,7 @@ function showCanvas() {
 
 //causes the settings button to appear when mouse enters the Agave
 function bodyOnMouseOver() {
-    if (chartIsRendered || (document.getElementById("startPage") && document.getElementById("startPage").currentStyle.visibility == "hidden"))
+    if (chartIsRendered || (document.getElementById("startPage") && window.getComputedStyle(document.getElementById("startPage")).visibility == "hidden"))
         document.getElementById("backImageButton").style.opacity = .5;
 }
 
@@ -755,7 +756,7 @@ function settingsOver() {
 
 //occurs when leaving the 'Select Chart Data' button
 function startDataOut() {
-    if (document.getElementById("startPage").currentStyle.visibility == "visible") {
+    if (window.getComputedStyle(document.getElementById("startPage")).visibility == "visible") {
         document.getElementById("startDataID").innerHTML = "Select Chart Data";
         document.getElementById("createTreeMapIcon").style.visibility = "visible";
         document.getElementById("startDataID").style.color = "white";
@@ -768,7 +769,7 @@ function startDataOut() {
 
 //occurs when leaving the 'Example Data' button
 function demoOut() {
-    if (document.getElementById("startPage").currentStyle.visibility == "visible") {
+    if (window.getComputedStyle(document.getElementById("startPage")).visibility == "visible") {
         document.getElementById("demoID").innerHTML = "Example Data";
         document.getElementById("demoIcon").style.visibility = "visible";
         document.getElementById("demoID").style.color = "white";
@@ -777,7 +778,7 @@ function demoOut() {
 
 //occurs when leaving the 'Settings' button
 function settingsOut() {
-    if (document.getElementById("startPage").currentStyle.visibility == "visible") {
+    if (window.getComputedStyle(document.getElementById("startPage")).visibility == "visible") {
         document.getElementById("settingsID").innerHTML = "Settings";
         document.getElementById("settingsIcon").style.visibility = "visible";
     }
